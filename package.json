@@ -1,0 +1,19 @@
+{
+  "name": "node-email",
+  "version": "0.0.1",
+  "description": "email library for node",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"To test the IMAP functions you need to run the test script under the IMAP folder with host, port, user, pass arguments.\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aiko/node-email.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Aiko/node-email/issues"
+  },
+  "homepage": "https://github.com/Aiko/node-email#readme"
+}
