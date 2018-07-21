@@ -24,14 +24,18 @@ class IMAP {
             this.sock.setEncoding('utf8')
             var _this = this
             this.sock.on('data', (d) => {
-                if (d.length > 8 && isNaN(d.slice(0, 8))) _this.buffer += d
-                else {
+                if (/(\n[0-9]{8})|(^[0-9]{8})/g.exec(d)) {
                     let output = _this.buffer
                     _this.buffer = ''
-                    _this.queue[d.slice(0, 8)](output + d)
-                }
+                    _this.queue[/(\n[0-9]{8})|(^[0-9]{8})/g.exec(d)[0].trim()]((output + d).trim())
+                } else _this.buffer += d
             })
-            setTimeout(() => timeout ? j('timeout') : null, this.opts.timeout || 3000)
+            setTimeout(() => {
+                if (timeout) {
+                    j('timeout')
+                    this.sock.destroy()
+                }
+            }, this.opts.timeout || 150000)
         })
     }
     padLine(n) {
@@ -46,14 +50,21 @@ class IMAP {
             this.sock.write(`${this.padLine(n)} ${command}\r\n`)
         })
     }
-    async login(u, p) {
-        u = u || this.opts.user
-        p = p || this.opts.pass
+    async exec(cmd, f) {
+        // pass f if you want to give a preprocessor
         return await new Promise((s, j) => {
-            this.execute(`LOGIN ${u} ${p}`).then((d) => {
-                if (d.indexOf('OK LOGIN completed') < 0) j(d)
-                else s()
-            }).catch((e) => j(e))
+            this.execute(cmd).then((d) => {
+                if (d.indexOf('OK') < 0) j(d)
+                else s(f ? f(d) : d)
+            })
+        }).catch((e) => j(e))
+    }
+    async login(u, p) {
+        return await this.exec(`LOGIN ${u || this.opts.user} ${p || this.opts.pass}`)
+    }
+    async getFolders() {
+        return await this.exec(`LIST "" "%"`, (d) => {
+            return d.match(/(([a-zA-Z]+)|(\"[a-zA-Z ]+\"))(?=\r*\n)/g)
         })
     }
 }

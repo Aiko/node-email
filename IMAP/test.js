@@ -12,7 +12,8 @@ client.open().then(() => {
     console.debug("Connected to IMAP")
     client.login().then(() => {
         console.debug("Logged in")
-        console.log("\n\nAll tests passed.")
-        exit()
+        client.getFolders()
+            .then((folders) => folders.forEach(_ => console.log(_)))
+            .catch((e) => console.error(e))
     }).catch((e) => console.error(e))
 }).catch((e) => console.error(e))
