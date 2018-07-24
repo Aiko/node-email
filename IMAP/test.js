@@ -16,6 +16,7 @@ async function test() {
     folders.forEach(_ => console.log('\t' + _))
     await client.select('INBOX')
     let emails = await client.getEmails(1, 5)
+    console.log('got')
     console.log(emails)
 }
 
