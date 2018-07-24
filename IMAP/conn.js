@@ -1,4 +1,5 @@
 const tls = require('tls')
+const hypertext = require('html-to-text')
 
 class IMAP {
     constructor(options) {
@@ -57,14 +58,42 @@ class IMAP {
                 if (d.indexOf('OK') < 0) j(d)
                 else s(f ? f(d) : d)
             })
-        }).catch((e) => j(e))
+        }).catch((e) => console.log(e))
     }
-    async login(u, p) {
-        return await this.exec(`LOGIN ${u || this.opts.user} ${p || this.opts.pass}`)
+    async login(username, password) {
+        return await this.exec(`LOGIN ${username || this.opts.user} ${password || this.opts.pass}`)
     }
     async getFolders() {
-        return await this.exec(`LIST "" "%"`, (d) => {
-            return d.match(/(([a-zA-Z]+)|(\"[a-zA-Z ]+\"))(?=\r*\n)/g)
+        return await this.exec(`LIST "" "%"`, (d) => d.match(/(([a-zA-Z]+)|(\"[a-zA-Z ]+\"))(?=\r*\n)/g))
+    }
+    async select(boxName) {
+        return await this.exec(`SELECT ${boxName}`)
+    }
+    async getEmails(start, stop) {
+        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[TEXT] BODY.PEEK[HEADER.FIELDS (DATE FROM SUBJECT)])`, (d) => {
+            return d
+                .split(d.indexOf('Content-Type') < 0 ? /.?BODY\[HEADER.*(\r\n|\n)/g : /(\n|^)\* [0-9]* FETCH .*/g)
+                .filter(_ => _) // split into parts, filter out nonsense
+                .map(email => email.split(/(\r\n|\n)--_[A-Za-z0-9_]*/g)) // split on mime separators
+                .filter(_ => _.length > 5) // filter out nonsense
+                .map(email => {
+                    let header = email
+                        .filter(part => part.indexOf('HEADER') > -1)[0] // identify header part
+                        .replace(/(^.*(\r\n|\n))|((\r\n|\n).*$)/g, '') // strip start and end
+                        .split(/(\r\n|\n)/g) // split into lines
+                        .map(line => [line.substring(0, line.indexOf(':')), line.substring(line.indexOf(':') + 1).trim()])
+                    // turns header into key, value format
+                    return {
+                        from: header.filter(field => field[0].toLowerCase() == 'from')[0][1],
+                        subject: header.filter(field => field[0].toLowerCase() == 'subject')[0][1],
+                        date: header.filter(field => field[0].toLowerCase() == 'date')[0][1],
+                        body: email.filter(part => part.indexOf('text/html') > -1)[0],
+                        text: email.filter(part => part.indexOf('text/plain') > -1)[0]
+                            .replace(/.*Content-T.*(\r\n|\n)/g, '')
+                            .replace(/=(\r|\n|\t)+/g, '')
+                            .trim()
+                    }
+                })
         })
     }
 }

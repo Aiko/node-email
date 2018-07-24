@@ -1,19 +1,22 @@
 const IMAP = require('./conn.js')
 const args = process.argv.slice(2)
+const fetch = require('node-fetch')
 
-client = new IMAP({
+let client = new IMAP({
     host: args[0],
     port: args[1],
     user: args[2],
     pass: args[3]
 })
 
-client.open().then(() => {
-    console.debug("Connected to IMAP")
-    client.login().then(() => {
-        console.debug("Logged in")
-        client.getFolders()
-            .then((folders) => folders.forEach(_ => console.log(_)))
-            .catch((e) => console.error(e))
-    }).catch((e) => console.error(e))
-}).catch((e) => console.error(e))
+async function test() {
+    await client.open()
+    await client.login()
+    let folders = await client.getFolders()
+    folders.forEach(_ => console.log('\t' + _))
+    await client.select('INBOX')
+    let emails = await client.getEmails(1, 5)
+    console.log(emails)
+}
+
+test()

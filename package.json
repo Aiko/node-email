@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/Aiko/node-email/issues"
   },
-  "homepage": "https://github.com/Aiko/node-email#readme"
+  "homepage": "https://github.com/Aiko/node-email#readme",
+  "dependencies": {
+    "html-to-text": "^4.0.0",
+    "node-fetch": "^2.2.0"
+  }
 }
