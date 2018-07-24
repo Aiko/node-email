@@ -15,7 +15,7 @@ async function test() {
     let folders = await client.getFolders()
     folders.forEach(_ => console.log('\t' + _))
     await client.select('INBOX')
-    let emails = await client.getEmails(1, 5)
+    let emails = await client.getEmails(500, 500)
     console.log('got')
     console.log(emails)
 }

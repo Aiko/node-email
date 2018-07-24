@@ -90,11 +90,12 @@ class IMAP {
                         .map(line => [line.substring(0, line.indexOf(':')), line.substring(line.indexOf(':') + 1).trim()])
                     let mime_in_a_box = email.filter(part => part.indexOf('text/plain') > -1)[0]
                     if (mime_in_a_box) {
-                        let base64 = mime_in_a_box.indexOf('base64') > 0 || /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/.test(mime_in_a_box.trim().replace(/\r|\n/g,''))
+                        let base64 = mime_in_a_box.indexOf('base64') > 0 || /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/.test(mime_in_a_box.trim().replace(/\r|\n/g, ''))
                         mime_in_a_box = mime_in_a_box
-                        .replace(/.*Content-T.*(\r\n|\n)/g, '')
-                        .replace(/=(\r|\n|\t)+/g, '')
-                        .trim()
+                            .replace(/.*Content-T.*(\r\n|\n)/g, '')
+                            .replace(/=(\r|\n|\t)+/g, '')
+                            .trim()
+                        if (base64) mime_in_a_box = atob(mime_in_a_box)
                     }
                     // turns header into key, value format
                     try {
