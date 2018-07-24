@@ -56,7 +56,6 @@ class IMAP {
         // pass f if you want to give a preprocessor
         return await new Promise((s, j) => {
             this.execute(cmd).then((d) => {
-                console.log("GOT RES")
                 try {
                     if (d.indexOf('OK') < 0) j(d)
                     else s(f ? f(d) : d)
@@ -66,6 +65,9 @@ class IMAP {
                 }
             })
         }).catch((e) => console.log(e))
+    }
+    async countMessages(box) {
+        return await this.exec(`STATUS ${box} (MESSAGES)`, (d) => eval(d.match(/[0-9]*/g).filter(_ => _)[0]))
     }
     async login(username, password) {
         return await this.exec(`LOGIN ${username || this.opts.user} ${password || this.opts.pass}`)
