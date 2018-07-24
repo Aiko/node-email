@@ -1,6 +1,7 @@
 const tls = require('tls')
 const hypertext = require('html-to-text')
 const atob = require('atob')
+const MailParser = require("mailparser-mit").MailParser;
 
 class IMAP {
     constructor(options) {
@@ -79,46 +80,17 @@ class IMAP {
         return await this.exec(`SELECT ${boxName}`)
     }
     async getEmails(start, stop) {
-        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[TEXT] BODY.PEEK[HEADER.FIELDS (DATE FROM SUBJECT)])`, (d) => {
-            return d.split(d.indexOf('Content-Type') < 0 ? /.?BODY\[HEADER.*(\r\n|\n)/g : /(\n|^)\* [0-9]* FETCH .*/g).filter(_ => _) // split into parts, filter out nonsense
-                .map(email => email.split(/(\r\n|\n)--[A-z0-9=_\.-]*/g)) // split on mime separators
-                .map(email => email.filter(part => part.length > 5)) // filter out inner nonsense
-                .filter(_ => _.length > 0) // filter out nonsense
-                .map(email => {
-                    let header = email
-                        .filter(part => part.indexOf('HEADER') > -1)[0] // identify header part
-                        .replace(/(^.*(\r\n|\n))|((\r\n|\n).*$)/g, '') // strip start and end
-                        .split(/(\r\n|\n)/g) // split into lines
-                        .map(line => [line.substring(0, line.indexOf(':')), line.substring(line.indexOf(':') + 1).trim()])
-                    let mime_in_a_box = email.filter(part => part.indexOf('text/plain') > -1)[0]
-                    if (mime_in_a_box) {
-                        let base64 = mime_in_a_box.indexOf('base64') > 0 || /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/.test(mime_in_a_box.trim().replace(/\r|\n/g, ''))
-                        mime_in_a_box = mime_in_a_box
-                            .replace(/.*Content-T.*(\r\n|\n)/g, '')
-                            .replace(/=(\r|\n|\t)+/g, '')
-                            .trim()
-                        if (base64) mime_in_a_box = atob(mime_in_a_box)
-                    }
-                    // turns header into key, value format
-                    try {
-                        return {
-                            from: header.filter(field => field[0].toLowerCase() == 'from')[0][1],
-                            subject: header.filter(field => field[0].toLowerCase() == 'subject')[0][1],
-                            date: header.filter(field => field[0].toLowerCase() == 'date')[0][1],
-                            body: email.filter(part => part.indexOf('text/html') > -1)[0] || email[0],
-                            text: mime_in_a_box || email[0]
-                        }
-                    } catch (e) {
-                        return {
-                            from: '',
-                            subject: '',
-                            date: '',
-                            body: email.filter(part => part.indexOf('text/html') > -1)[0] || email[0],
-                            text: mime_in_a_box || email[0]
-                        }
-                    }
-                })
-        })
+        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[])`, (d) => Promise.all(
+            d.split(/\* [0-9]* FETCH .*(\r\n|\n)/g)
+            .filter(_ => _.length > 5)
+            .map(async email => {
+                let parser = new MailParser()
+                let s = new Promise((s, j) => parser.on('end', (mail) => s(mail)))
+                parser.write(email)
+                parser.end()
+                return await s
+            })
+        ))
     }
 }
 

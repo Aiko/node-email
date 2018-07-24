@@ -17,8 +17,9 @@ async function test() {
     await client.select('INBOX')
     let numEmails = await client.countMessages('INBOX')
     console.log(numEmails)
-    let emails = await client.getEmails(7872-50, '*')
+    let emails = await client.getEmails('*', '*')
     console.log(`Got ${emails.length} emails`)
+    console.log(emails[0].from)
 }
 
 test()
