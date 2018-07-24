@@ -1,5 +1,6 @@
 const tls = require('tls')
 const hypertext = require('html-to-text')
+const atob = require('atob')
 
 class IMAP {
     constructor(options) {
@@ -78,7 +79,7 @@ class IMAP {
     async getEmails(start, stop) {
         return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[TEXT] BODY.PEEK[HEADER.FIELDS (DATE FROM SUBJECT)])`, (d) => {
             return d.split(d.indexOf('Content-Type') < 0 ? /.?BODY\[HEADER.*(\r\n|\n)/g : /(\n|^)\* [0-9]* FETCH .*/g).filter(_ => _) // split into parts, filter out nonsense
-                .map(email => email.split(/(\r\n|\n)--_[A-Za-z0-9_]*/g)) // split on mime separators
+                .map(email => email.split(/(\r\n|\n)--[A-z0-9=_\.-]*/g)) // split on mime separators
                 .map(email => email.filter(part => part.length > 5)) // filter out inner nonsense
                 .filter(_ => _.length > 0) // filter out nonsense
                 .map(email => {
@@ -88,10 +89,13 @@ class IMAP {
                         .split(/(\r\n|\n)/g) // split into lines
                         .map(line => [line.substring(0, line.indexOf(':')), line.substring(line.indexOf(':') + 1).trim()])
                     let mime_in_a_box = email.filter(part => part.indexOf('text/plain') > -1)[0]
-                    if (mime_in_a_box) mime_in_a_box = mime_in_a_box
+                    if (mime_in_a_box) {
+                        let base64 = mime_in_a_box.indexOf('base64') > 0
+                        mime_in_a_box = mime_in_a_box
                         .replace(/.*Content-T.*(\r\n|\n)/g, '')
                         .replace(/=(\r|\n|\t)+/g, '')
                         .trim()
+                    }
                     // turns header into key, value format
                     try {
                         return {
