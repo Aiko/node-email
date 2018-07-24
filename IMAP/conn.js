@@ -109,7 +109,13 @@ class IMAP {
                             text: mime_in_a_box || email[0]
                         }
                     } catch (e) {
-                        console.log(e)
+                        return {
+                            from: '',
+                            subject: '',
+                            date: '',
+                            body: email.filter(part => part.indexOf('text/html') > -1)[0] || email[0],
+                            text: mime_in_a_box || email[0]
+                        }
                     }
                 })
         })
