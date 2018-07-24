@@ -90,7 +90,7 @@ class IMAP {
                         .map(line => [line.substring(0, line.indexOf(':')), line.substring(line.indexOf(':') + 1).trim()])
                     let mime_in_a_box = email.filter(part => part.indexOf('text/plain') > -1)[0]
                     if (mime_in_a_box) {
-                        let base64 = mime_in_a_box.indexOf('base64') > 0
+                        let base64 = mime_in_a_box.indexOf('base64') > 0 || /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/.test(mime_in_a_box.trim())
                         mime_in_a_box = mime_in_a_box
                         .replace(/.*Content-T.*(\r\n|\n)/g, '')
                         .replace(/=(\r|\n|\t)+/g, '')
