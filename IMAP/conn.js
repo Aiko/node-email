@@ -26,10 +26,10 @@ class IMAP {
             this.sock.setEncoding('utf8')
             var _this = this
             this.sock.on('data', (d) => {
-                if (/(\n[0-9]{8})|(^[0-9]{8})/g.exec(d)) {
+                if (/((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/g.exec(d)) {
                     let output = _this.buffer
                     _this.buffer = ''
-                    _this.queue[/(\n[0-9]{8})|(^[0-9]{8})/g.exec(d)[0].trim()]((output + d).trim())
+                    _this.queue[/((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/g.exec(d)[0].trim()]((output + d).trim())
                 } else _this.buffer += d
             })
             setTimeout(() => {
