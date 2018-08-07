@@ -9,17 +9,14 @@ let client = new IMAP({
     pass: args[3]
 })
 
-async function test() {
-    await client.open()
-    await client.login()
-    let folders = await client.getFolders()
-    folders.forEach(_ => console.log('\t' + _))
-    await client.select('INBOX')
-    let numEmails = await client.countMessages('INBOX')
-    console.log(numEmails)
-    let emails = await client.getEmails('*', '*')
-    console.log(`Got ${emails.length} emails`)
-    console.log(emails[0].from)
-}
-
-test()
+await client.open()
+await client.login()
+let folders = await client.getFolders()
+folders.forEach(_ => console.log('\t' + _))
+await client.select('INBOX')
+let numEmails = await client.countMessages('INBOX')
+console.log(numEmails)
+let emails = await client.getEmails('*', '*')
+console.log(`Got ${emails.length} emails`)
+console.log(emails[0].attachments[0].length)
+console.log(emails[0].headers)

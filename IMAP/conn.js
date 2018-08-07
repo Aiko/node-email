@@ -81,14 +81,18 @@ class IMAP {
     }
     async getEmails(start, stop) {
         return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[])`, (d) => Promise.all(
-            d.split(/\* [0-9]* FETCH .*(\r\n|\n)/g)
+            d.split(/(?=\* [0-9]* FETCH .*(\r\n|\n))/g)
             .filter(_ => _.length > 5)
             .map(async email => {
                 let parser = new MailParser()
                 let s = new Promise((s, j) => parser.on('end', (mail) => s(mail)))
                 parser.write(email)
                 parser.end()
-                return await s
+                let parsedEmail = await s
+                if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\seen') > 0).length > 0)
+                    parsedEmail.headers.seen = true
+                else parsedEmail.headers.seen = false
+                return parsedEmail
             })
         ))
     }
