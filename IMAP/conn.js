@@ -92,6 +92,11 @@ class IMAP {
                 if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\seen') > 0).length > 0)
                     parsedEmail.headers.seen = true
                 else parsedEmail.headers.seen = false
+                try {
+                    parsedEmail.headers.id = eval(Object.keys(parsedEmail.headers).filter(key => /\* [0-9]* fetch .*/g.test(key))[0].split(' ')[1])
+                } catch(e) {
+                    parsedEmail.headers.id = ('*' != stop ? stop : start)
+                }
                 return parsedEmail
             })
         ))
