@@ -93,6 +93,12 @@ class IMAP {
     async restoreMessages(uid) {
         return await this.exec(`STORE ${uid} -FLAGS \\Deleted`)
     }
+    async star(uid) {
+        return await this.exec(`STORE ${uid} +FLAGS \\flagged`)
+    }
+    async unstar(uid) {
+        return await this.exec(`STORE ${uid} -FLAGS \\flagged`)
+    }
     async read(uid) {
         return await this.exec(`STORE ${uid} +FLAGS \\Seen`)
     }
