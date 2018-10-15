@@ -111,6 +111,30 @@ class IMAP {
     async select(boxName) { console.log("SELECT "+boxName)
         return await this.exec(`SELECT ${boxName}`)
     }
+    async getSenders(start, stop) {
+        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY[HEADER.FIELDS (FROM)])`, (d) => Promise.all(
+            d.split(/(?=\* [0-9]* FETCH .*(\r\n|\n))/g)
+            .filter(_ => _.length > 5)
+            .map(async email => {
+                let parser = new MailParser()
+                let s = new Promise((s, j) => parser.on('end', (mail) => s(mail)))
+                parser.write(email)
+                parser.end()
+                let parsedEmail = await s
+                if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\seen') > 0).length > 0)
+                    parsedEmail.headers.seen = true
+                else parsedEmail.headers.seen = false
+                if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\flagged') > 0).length > 0) parsedEmail.headers.starred = true
+                else parsedEmail.headers.starred = false
+                try {
+                    parsedEmail.headers.id = eval(Object.keys(parsedEmail.headers).filter(key => /\* [0-9]* fetch .*/g.test(key))[0].split(' ')[1])
+                } catch(e) {
+                    parsedEmail.headers.id = ('*' != stop ? stop : start)
+                }
+                return parsedEmail
+            })
+        ))
+    }
     async getEmails(start, stop) {
         return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[])`, (d) => Promise.all(
             d.split(/(?=\* [0-9]* FETCH .*(\r\n|\n))/g)

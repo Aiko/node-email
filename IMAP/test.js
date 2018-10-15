@@ -19,7 +19,9 @@ let x = async () => {
     console.log(numEmails)
     let emails = await client.getEmails('*', '*')
     console.log(`Got ${emails.length} emails`)
+    let senders = await client.getSenders('*', '*')
     console.log(emails[0].headers)
+    console.log(senders[0])
 }
 x()
 
