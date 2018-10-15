@@ -11,13 +11,14 @@ class IMAP {
         this.queue = {}
         this.buffer = ''
     }
-    async open(h, p, u, s) {
+    async close() { this.sock.destroy() }
+    async open(h, p, u, s, x) {
         return await new Promise((s, j) => {
             let timeout = true
             if (this.sock) this.sock.destroy()
             this.sock = tls.connect({
-                host: h || this.opts.host || '127.0.0.1',
-                port: p || this.opts.port || 143,
+                host: h || this.opts.host || null,
+                port: p || this.opts.port || 993,
                 user: u || this.opts.user || null,
                 pass: s || this.opts.pass || null
             }, () => {
@@ -45,6 +46,7 @@ class IMAP {
         return `${n}`.padStart(8, '0')
     }
     async execute(command) {
+        console.log(command)
         let n = this.line
         this.line += 1
         return await new Promise((s, j) => {
@@ -54,29 +56,53 @@ class IMAP {
         })
     }
     async exec(cmd, f) {
+        let d = await this.execute(cmd).catch(e => console.log(e))
+        if (!d.match(/^[0-9]+ OK/gim)) throw d
+        return d.match(/^[0-9]+ OK/gim) ? (f ? f(d) : d) : null
+        /*
         // pass f if you want to give a preprocessor
         return await new Promise((s, j) => {
-            this.execute(cmd).then((d) => {
+            this.execute(cmd).then((d) => { //d.match(/^0-9]+ OK/gim) ? s(f ? f(d) : d) : null)
                 try {
-                    if (d.indexOf('OK') < 0) j(d)
+                    if (!d.match(/^[0-9]+ OK/gim)) throw d //j(d)
                     else s(f ? f(d) : d)
                 } catch (e) {
                     console.log(e)
-                    j(e)
+                    throw e
+                    //j(e)
                 }
             })
-        }).catch((e) => console.log(e))
+        })*/
     }
     async countMessages(box) {
         return await this.exec(`STATUS ${box} (MESSAGES)`, (d) => eval(d.match(/[0-9]*/g).filter(_ => _)[0]))
     }
-    async login(username, password) {
-        return await this.exec(`LOGIN ${username || this.opts.user} ${password || this.opts.pass}`)
+    async login(username, password, xoauth) {
+        if (password || this.opts.pass)
+            return await this.exec(`LOGIN ${username || this.opts.user} ${password || this.opts.pass}`)
+        else {
+            console.log("TRYING XOAUTH");
+            let s = await this.exec(`AUTHENTICATE XOAUTH2 ${xoauth || this.opts.xoauth}`)
+            this.exec(``)
+            return s
+        }
+    }
+    async deleteMessages(uid) {
+        return await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
+    }
+    async restoreMessages(uid) {
+        return await this.exec(`STORE ${uid} -FLAGS \\Deleted`)
+    }
+    async read(uid) {
+        return await this.exec(`STORE ${uid} +FLAGS \\Seen`)
+    }
+    async unread(uid) {
+        return await this.exec(`STORE ${uid} -FLAGS \\Seen`)
     }
     async getFolders() {
-        return await this.exec(`LIST "" "%"`, (d) => d.match(/(([a-zA-Z]+)|(\"[a-zA-Z ]+\"))(?=\r*\n)/g))
+        return await this.exec(`LIST "" "*"`, (d) => d.match(/(([a-zA-Z\[\]\\\/ /]+)|(\"[a-zA-Z \[\]\\\/]+\"))(?=\r*\n)/g))
     }
-    async select(boxName) {
+    async select(boxName) { console.log("SELECT "+boxName)
         return await this.exec(`SELECT ${boxName}`)
     }
     async getEmails(start, stop) {
@@ -92,6 +118,8 @@ class IMAP {
                 if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\seen') > 0).length > 0)
                     parsedEmail.headers.seen = true
                 else parsedEmail.headers.seen = false
+                if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\flagged') > 0).length > 0) parsedEmail.headers.starred = true
+                else parsedEmail.headers.starred = false
                 try {
                     parsedEmail.headers.id = eval(Object.keys(parsedEmail.headers).filter(key => /\* [0-9]* fetch .*/g.test(key))[0].split(' ')[1])
                 } catch(e) {
