@@ -31,8 +31,7 @@ class IMAP {
                 if (/((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/g.exec(d)) {
                     let output = _this.buffer
                     _this.buffer = ''
-                    _this.queue[/((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/g.exec(d)[0].trim()]((output + d).trim())
-                } else _this.buffer += d
+                    _this.queue[/((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/g.exec(d)[0].trim()]((output + d).trim())                      } else _this.buffer += d
             })
             setTimeout(() => {
                 if (timeout) {
@@ -46,7 +45,6 @@ class IMAP {
         return `${n}`.padStart(8, '0')
     }
     async execute(command) {
-        console.log(command)
         let n = this.line
         this.line += 1
         return await new Promise((s, j) => {
@@ -81,11 +79,17 @@ class IMAP {
         if (password || this.opts.pass)
             return await this.exec(`LOGIN ${username || this.opts.user} ${password || this.opts.pass}`)
         else {
-            console.log("TRYING XOAUTH");
+            //console.log("TRYING XOAUTH");
             let s = await this.exec(`AUTHENTICATE XOAUTH2 ${xoauth || this.opts.xoauth}`)
             this.exec(``)
             return s
         }
+    }
+    async moveTo(uid, fromFolder, toFolder) {
+        await this.select(fromFolder)
+        await this.exec(`COPY ${uid} ${toFolder}`)
+        return await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
+        //return await this.exec('EXPUNGE')
     }
     async deleteMessages(uid) {
         return await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
@@ -108,7 +112,7 @@ class IMAP {
     async getFolders() {
         return await this.exec(`LIST "" "*"`, (d) => d.match(/(([a-zA-Z\[\]\\\/ /]+)|(\"[a-zA-Z \[\]\\\/]+\"))(?=\r*\n)/g))
     }
-    async select(boxName) { console.log("SELECT "+boxName)
+    async select(boxName) { //console.log("SELECT "+boxName)
         return await this.exec(`SELECT ${boxName}`)
     }
     async getSenders(start, stop) {
@@ -136,8 +140,7 @@ class IMAP {
         ))
     }
     async getEmails(start, stop) {
-        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[])`, (d) => Promise.all(
-            d.split(/(?=\* [0-9]* FETCH .*(\r\n|\n))/g)
+        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[])`, (d) => Promise.all(             d.split(/(?=\* [0-9]* FETCH .*(\r\n|\n))/g)
             .filter(_ => _.length > 5)
             .map(async email => {
                 let parser = new MailParser()
@@ -148,6 +151,9 @@ class IMAP {
                 if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\seen') > 0).length > 0)
                     parsedEmail.headers.seen = true
                 else parsedEmail.headers.seen = false
+                if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\deleted') > 0).length > 0)
+                    parsedEmail.headers.deleted = true
+                else parsedEmail.headers.deleted = false
                 if (parsedEmail.headers && Object.keys(parsedEmail.headers).filter(x => x.indexOf('\\flagged') > 0).length > 0) parsedEmail.headers.starred = true
                 else parsedEmail.headers.starred = false
                 try {
