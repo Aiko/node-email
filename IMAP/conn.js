@@ -50,7 +50,8 @@ class IMAP {
                 host: host || this.opts.host || null,
                 port: port || this.opts.port || 993,
                 user: user || this.opts.user || null,
-                pass: pass || this.opts.pass || null
+                pass: pass || this.opts.pass || null,
+                rejectUnauthorized: false
             }, () => s(!(wait_for_connect = false)))
 
             this.sock.setEncoding('utf8')
