@@ -40,7 +40,7 @@ class IMAP {
     async close() {
         this.sock.destroy()
     }
-    async open(host, port, user, pass, xoauth) {
+    async open(host, port, user, pass, xoauth, errorcb) {
         return await new Promise((s, j) => {
 
             let wait_for_connect = true
@@ -68,6 +68,8 @@ class IMAP {
                     _this.queue[i]((output + d).trim())
                 } else _this.buffer += d
             })
+
+            if (errorcb) this.sock.on('error', errorcb)
 
             setTimeout(() => {
                 if (wait_for_connect) j(true);
