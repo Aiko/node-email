@@ -58,6 +58,7 @@ class IMAP {
             const _this = this
 
             this.sock.on('data', d => {
+                console.log(d)
                 const r_ok = /((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/gim
                 const s = r_ok.exec(d)
                 if (s) {
