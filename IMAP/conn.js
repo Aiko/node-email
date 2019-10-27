@@ -122,6 +122,10 @@ class IMAP {
         // we do this without EXPUNGE. if you want to expunge, uncomment below line
         //return await this.exec('EXPUNGE')
     }
+    async copyTo(uid, fromFolder, toFolder) {
+        await this.select(fromFolder)
+        await this.exec(`COPY ${uid} ${toFolder}`)
+    }
     async deleteMessages(uid) {
         return await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
     }
@@ -143,14 +147,26 @@ class IMAP {
     async getFolders() {
         return await this.exec(`LIST "" "*"`, (d) => d.match(/(([a-zA-Z\[\]\\\/ /]+)|(\"[a-zA-Z \[\]\\\/]+\"))(?=\r*\n)/g))
     }
+    async createFolder(name) {
+        return await this.exec(`CREATE ${name}`)
+    }
+    async deleteFolder(name) {
+        return await this.exec(`DELETE ${name}`)
+    }
+    async renameFolder(oldName, newName) {
+        return await this.exec(`RENAME ${oldName} ${newName}`)
+    }
     async select(boxName) { //console.log("SELECT "+boxName)
         return await this.exec(`SELECT ${boxName}`)
     }
     async getSenders(start, stop) {
-        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[HEADER.FIELDS (FROM)])`, d => Promise.all(process_emails(d, start, stop)))
+        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS UID BODY.PEEK[HEADER.FIELDS (FROM)])`, d => Promise.all(process_emails(d, start, stop)))
     }
     async getEmails(start, stop) {
-        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS BODY.PEEK[])`, (d) => Promise.all(process_emails(d, start, stop)))
+        return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS UID BODY.PEEK[])`, (d) => Promise.all(process_emails(d, start, stop)))
+    }
+    async getEmailsUID(startUID, stopUID) {
+        return await this.exec(`UID FETCH ${startUID || 1}${stopUID ? ':' + stopUID : ''} (FLAGS UID BODY.PEEK[])`, (d) => Promise.all(process_emails(d, start, stop)))
     }
 }
 
