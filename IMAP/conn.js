@@ -145,7 +145,7 @@ class IMAP {
         return await this.exec(`STORE ${uid} -FLAGS \\Seen`)
     }
     async getFolders(mailboxName='"*"') {
-        return await this.exec(`LIST "" ${mailboxName}`, d => d.match(/(([a-zA-Z\[\]\\\/ /]+)|(\"[a-zA-Z\.\(\) \[\]\\\/]+\"))(?=\r*\n)/g))
+        return await this.exec(`LIST "" ${mailboxName}`, d => d.match(/(([a-zA-Z\[\]\\\/ /]+)|(\"[a-zA-Z\.\(\)0-9 \[\]\\\/]+\"))(?=\r*\n)/g))
     }
     async createFolder(name) {
         return await this.exec(`CREATE ${name}`)
