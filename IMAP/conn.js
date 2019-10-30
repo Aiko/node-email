@@ -161,7 +161,24 @@ class IMAP {
         return await this.exec(`RENAME ${oldName} ${newName}`)
     }
     async select(boxName) { //console.log("SELECT "+boxName)
-        return await this.exec(`SELECT ${boxName}`)
+        return await this.exec(`SELECT ${boxName}`, d => {
+            const result = {}
+            let r = []
+
+            r = /([0-9]*) EXISTS/g.exec(d)
+            if (r && r[1]) result.exists = r[1]
+
+            r = /FLAGS \(([^)]+)\)$/g.exec(d)
+            if (r && r[1]) result.flags = r[1].split(' ')
+
+            r = /UIDVALIDITY ([0-9]*)/g.exec(d)
+            if (r && r[1]) result.uidvalidity = r[1]
+
+            r = /UIDNEXT ([0-9]*)/g.exec(d)
+            if (r && r[1]) result.uidnext = r[1]
+
+            return result
+        })
     }
     async getSenders(start, stop) {
         return await this.exec(`FETCH ${start || 1}${stop ? ':' + stop : ''} (FLAGS UID BODY.PEEK[HEADER.FIELDS (FROM)])`, d => Promise.all(process_emails(d, start, stop)))
