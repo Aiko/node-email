@@ -4,7 +4,8 @@ const atob = require('atob')
 const MailParser = require("mailparser-mit").MailParser;
 const assert = require('assert')
 
-const process_emails = (emails, start, stop) => emails
+const process_emails = (emails, start, stop) => {
+    const mail = emails
     .split(/(?=\* [0-9]* FETCH .*(\r\n|\n))/g)
     .filter(_ => _.length > 5)
     .map(async email => {
@@ -28,6 +29,12 @@ const process_emails = (emails, start, stop) => emails
         }
         return parsed
     })
+    const uidnext = emails.split('UIDNEXT ').reduceRight(_=>_).split(']')[0]
+    return {
+        "emails": mail,
+        "uidnext": uidnext
+    }
+}
 
 class IMAP {
     constructor(options) {
@@ -58,7 +65,6 @@ class IMAP {
             const _this = this
 
             this.sock.on('data', d => {
-                console.log(d)
                 const r_ok = /((\n[0-9]{8})|(^[0-9]{8}))(?= (OK|NO))/gim
                 const s = r_ok.exec(d)
                 if (s) {
