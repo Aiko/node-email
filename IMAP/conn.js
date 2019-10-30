@@ -30,9 +30,7 @@ const process_emails = (emails, start, stop) => {
         return parsed
     })
 
-    return {
-        "emails": mail
-    }
+    return mail
 }
 
 class IMAP {
