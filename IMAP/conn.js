@@ -99,7 +99,7 @@ class IMAP {
     async exec(cmd, f) {
         const s = await this.execute(cmd).catch(console.error)
         const r_ok = /^[0-9]+ OK/gim
-        assert(!!s.match(r_ok), 'Mailserver did not return OK')
+        assert(!!s.match(r_ok) || s.indexOf('The specified message set is invalid') > -1, 'Mailserver did not return OK')
         return f ? f(s) : s;
     }
     async countMessages(box) {
