@@ -29,10 +29,9 @@ const process_emails = (emails, start, stop) => {
         }
         return parsed
     })
-    const uidnext = emails.split('UIDNEXT ').reduceRight(_=>_).split(']')[0]
+
     return {
-        "emails": mail,
-        "uidnext": uidnext
+        "emails": mail
     }
 }
 
