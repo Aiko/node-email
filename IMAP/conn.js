@@ -124,8 +124,8 @@ class IMAP {
     async moveTo(uid, fromFolder, toFolder, expunge) {
         await this.select(fromFolder)
         await this.exec(`COPY ${uid} ${toFolder}`)
-        await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
-        if (expunge) await this.exec('EXPUNGE')
+        return await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
+        // await this.exec('EXPUNGE')
     }
     async copyTo(uid, fromFolder, toFolder) {
         await this.select(fromFolder)
