@@ -99,7 +99,9 @@ class IMAP {
     async exec(cmd, f) {
         const s = await this.execute(cmd).catch(console.error)
         const r_ok = /^[0-9]+ OK/gim
-        assert(!!s.match(r_ok) || s.indexOf('The specified message set is invalid') > -1, 'Mailserver did not return OK')
+        assert(!!s.match(r_ok) || s.indexOf('The specified message set is invalid') > -1,
+            'Mailserver did not return OK\n\n\n' + cmd + '\n\n\n' + s
+        )
         return f ? f(s) : s;
     }
     async countMessages(box) {
@@ -119,12 +121,11 @@ class IMAP {
             return s
         }
     }
-    async moveTo(uid, fromFolder, toFolder) {
+    async moveTo(uid, fromFolder, toFolder, expunge) {
         await this.select(fromFolder)
         await this.exec(`COPY ${uid} ${toFolder}`)
-        return await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
-        // we do this without EXPUNGE. if you want to expunge, uncomment below line
-        //return await this.exec('EXPUNGE')
+        await this.exec(`STORE ${uid} +FLAGS \\Deleted`)
+        if (expunge) await this.exec('EXPUNGE')
     }
     async copyTo(uid, fromFolder, toFolder) {
         await this.select(fromFolder)
